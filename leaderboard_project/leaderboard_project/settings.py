@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'leaderboard.urls'
+ROOT_URLCONF = 'leaderboard_project.urls'
 
 TEMPLATES = [
     {
@@ -76,7 +76,7 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json'
 }
 
-WSGI_APPLICATION = 'leaderboard.wsgi.application'
+WSGI_APPLICATION = 'leaderboard_project.wsgi.application'
 
 
 # Database
