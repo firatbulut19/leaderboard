@@ -17,8 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
 
         for (key, value) in validated_data.items():
-            if key == "display_name":
-                setattr(instance, key, value)
+            setattr(instance, key, value)
 
         instance.save()
 

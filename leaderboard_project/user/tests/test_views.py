@@ -18,12 +18,6 @@ class UserTest(TestCase):
         self.can = User.objects.create(display_name='Can')
         self.selin = User.objects.create(display_name='Selin')
         self.zeynep = User.objects.create(display_name='Zeynep')
-        self.valid_payload = {
-            'name': 'Muffin',
-        }
-        self.invalid_payload = {
-            'name': '',
-        }
 
     def test_get_all_users(self):
         response = client.get(reverse('get-users'))
@@ -53,14 +47,11 @@ class UserTest(TestCase):
 
     def test_update_user_valid(self):
         response = client.put('/user/profile/{}/'.format(self.can.user_id), data=json.dumps({"display_name": "firat"}), content_type='application/json')
-        print(response)
-        print('/user/profile/{}/'.format(self.ahmet.user_id))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_user_invalid(self):
         response = client.put('/user/profile/{}/'.format(self.can.user_id), data=json.dumps({"display_name": ""}), content_type='application/json')
-        print(response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_delete_user_valid(self):

@@ -15,16 +15,18 @@ class user_detail(APIView):
 
     def get(self, request, id):
         user = self.get_user(id)
-        if type(user) == Response:
+        if isinstance(user, Response):
             return user
-        else:
-            serializer = UserSerializer(user)
-            return Response(serializer.data)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
 
     def put(self, request, id):
 
+        if "display_name" not in request.data.keys():
+            return Response({"message": "display_name field missing."}, status=status.HTTP_400_BAD_REQUEST)
         user = self.get_user(id)
-        serializer = UserSerializer(user, data=request.data, context={'request': request}, partial=True)
+        data = {"display_name": request.data["display_name"]}
+        serializer = UserSerializer(user, data=data, context={'request': request}, partial=True)
 
         if serializer.is_valid():
             serializer.save()
