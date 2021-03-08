@@ -4,14 +4,20 @@ from rest_framework import status
 from user.models import User
 from user.serializers import UserSerializer
 
+import uuid
+
 
 class submit_score(APIView):
 
     def get_user(self, id):
         try:
+            try:
+                uuid_is_valid = uuid.UUID(str(id))
+            except ValueError:
+                return Response({"message": "Please provide a valid UUID."}, status=status.HTTP_400_BAD_REQUEST)
             return User.objects.get(user_id=id)
         except User.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
     def post(self, request):
 

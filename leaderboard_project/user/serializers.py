@@ -5,11 +5,13 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('user_id', 'display_name', 'points', 'rank')
+        fields = ('user_id', 'display_name', 'points', 'rank', 'country')
 
     def create(self, validated_data):
         user = User(
             display_name=validated_data['display_name'],
+            country = validated_data['country']
+
         )
         user.save()
         return user

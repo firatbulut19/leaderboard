@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'user',
+    'leaderboard',
+    'score',
     'rest_framework',
 ]
 
@@ -85,7 +87,7 @@ WSGI_APPLICATION = 'leaderboard_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'user',
+        'NAME': 'leaderboard_project',
         'USER': 'postgres',
         'PASSWORD': 'frtblt',
         'HOST': '127.0.0.1',
