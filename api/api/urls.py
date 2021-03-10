@@ -22,3 +22,4 @@ urlpatterns = [
     path('score/', include("score.urls")),
     path('leaderboard/', include("leaderboard.urls")),   
 ]
+
