@@ -1,13 +1,36 @@
 version: '3.7'
 
+x-service-volumes: &service-volumes
+  - ./:/api/:rw,cached
+
+x-database-variables: &database-variables
+  POSTGRES_DB: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+
+x-app-variables: &app-variables
+  <<: *database-variables
+  POSTGRES_HOST: db_postgres
+  SECRET_KEY: sample_secret_key
+  ALLOWED_HOSTS: 127.0.0.1,localhost
+
 services:
   app:
     build:
       context: .
     ports:
       - "8000:8000"
-    volumes:
-      - ./api:/api
-    command: sh -c "python manage.py runserver 0.0.0.0:8000"
-    environment:
-      - DEBUG=1
+    volumes: *service-volumes
+    command: >
+      sh -c "python3 api/manage.py migrate &&
+             python3 api/manage.py runserver 0.0.0.0:8000"
+    depends_on: 
+      - db_postgres
+    environment: *app-variables
+  
+  db_postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment: *database-variables
+  
