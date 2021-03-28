@@ -1,10 +1,16 @@
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from user.models import User
 from user.serializers import UserSerializer
-
+import redis
 import uuid
+
+redis_instance = redis.StrictRedis(host=settings.REDIS_HOST,
+                                  port=settings.REDIS_PORT, db=0)
+
+set_name = settings.REDIS_SET_NAME
 
 
 class submit_score(APIView):
@@ -34,9 +40,20 @@ class submit_score(APIView):
         if int(data['score_worth']) < 0:
             return Response({'message': 'Score can not be a negative number.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        new_points = user.points + int(data['score_worth'])
-        score = {"points": new_points}
-        serializer = UserSerializer(user, data=score, context={'request': request}, partial=True)
+        pipeline = redis_instance.pipeline()
+        pipeline.zadd(set_name, {data['user_id']: data['score_worth']}, incr=True)
+        pipeline.zrevrank(set_name, data['user_id'])
+        pipeline.zadd(user.country, {data['user_id']: data['score_worth']}, incr=True)
+        pipeline.zrevrank(user.country, data['user_id'])
+        pipeline.zscore(user.country, data['user_id'])
+        pipeline_values = pipeline.execute()
+        data = {
+            'rank': int(pipeline_values[1])+1,
+            'points': int(pipeline_values[4]),
+            'country_rank': int(pipeline_values[3])+1,
+            }
+        
+        serializer = UserSerializer(user, data=data, context={'request': request}, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

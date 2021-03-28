@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from .models import User
+import redis
+
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('user_id', 'display_name', 'points', 'rank', 'country')
+        fields = ('user_id', 'display_name', 'points', 'rank', 'country', 'country_rank')
 
     def create(self, validated_data):
         user = User(
@@ -14,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         )
         user.save()
+
         return user
 
     def update(self, instance, validated_data):
@@ -24,3 +27,4 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+    

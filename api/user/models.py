@@ -10,15 +10,11 @@ class User(models.Model):
     country = models.CharField(max_length=255, default='tr')
     points = models.IntegerField(default=0)
     rank = models.IntegerField(default=0)
+    country_rank = models.IntegerField(default=0)
+
 
     class Meta:
         ordering = ['points']
 
-    def get_points(self):
-        return self.display_name + ' has ' + str(self.points) + ' points.'
-
-    def get_rank(self):
-        return self.display_name + ' is rank ' + str(self.rank) + '.'
-
     def __repr__(self):
-        return self.display_name + ' is added.'
+        return str(self.user_id)

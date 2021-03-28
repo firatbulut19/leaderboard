@@ -1,36 +1,50 @@
 version: '3.7'
 
-x-service-volumes: &service-volumes
-  - ./:/api/:rw,cached
-
-x-database-variables: &database-variables
-  POSTGRES_DB: postgres
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-
-x-app-variables: &app-variables
-  <<: *database-variables
-  POSTGRES_HOST: db_postgres
-  SECRET_KEY: sample_secret_key
-  ALLOWED_HOSTS: 127.0.0.1,localhost
-
 services:
   app:
-    build:
-      context: .
+    build: ./api
+    restart: always
+    container_name: app
+    command: python manage.py runserver 0.0.0.0:8000
+    expose:
+      - "8000"
+    links:
+      - postgres:postgres
+      - redis:redis
+    env_file:
+      - ./.env.dev
+    volumes:
+      - web-static:/usr/src/app/static
+    
+  nginx:
+    build: ./nginx/
+    restart: always
+    container_name: nginx
     ports:
-      - "8000:8000"
-    volumes: *service-volumes
-    command: >
-      sh -c "python3 api/manage.py migrate &&
-             python3 api/manage.py runserver 0.0.0.0:8000"
-    depends_on: 
-      - db_postgres
-    environment: *app-variables
-  
-  db_postgres:
-    image: postgres
+      - "80:80"
+    volumes: 
+      - web-static:/www/static
+    links:
+      - app:app
+
+  postgres:
+    image: postgres:12.0-alpine
+    container_name: postgres
     ports:
       - "5432:5432"
-    environment: *database-variables
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
   
+  redis:
+    image: redis:alpine
+    command: redis-server --appendonly yes
+    container_name: redis
+    ports: 
+      - "6379:6379"
+    volumes: 
+      - redisdata:/data
+      
+volumes:
+  web-static:
+  pgdata:
+  redisdata:

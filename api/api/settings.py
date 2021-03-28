@@ -26,10 +26,16 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'default_secret_key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(int(os.environ.get('DEBUG', default=1)))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+"""
 ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS')
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS.extend(ALLOWED_HOSTS_ENV.split(','))
+"""
+
+REDIS_HOST = os.environ.get('REDIS_HOST', default='localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', default=6379)
+REDIS_SET_NAME = os.environ.get('REDIS_SET_NAME', default='global')
 
 # Application definition
 
@@ -80,19 +86,32 @@ WSGI_APPLICATION = 'api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-POSTGRES_DB = os.environ.get('POSTGRES_DB', default="postgres_db")
-POSTGRES_USER = os.environ.get('POSTGRES_USER', default="postgres")
-POSTGRES_HOST = os.environ.get('POSTGRES_HOST', default="127.0.0.1")
-POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', default="frtblt")
+POSTGRES_ENGINE = os.environ.get('SQL_ENGINE', default="django.db.backends.sqlite3")
+POSTGRES_DB = os.environ.get('SQL_DATABASE', os.path.join(BASE_DIR, "db.sqlite3"))
+POSTGRES_USER = os.environ.get('SQL_USER', default="postgres")
+POSTGRES_PASSWORD = os.environ.get('SQL_PASSWORD', default="frtblt")
+POSTGRES_HOST = os.environ.get('SQL_HOST', default="127.0.0.1")
+POSTGRES_PORT = os.environ.get('SQL_PORT', default=5432)
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': POSTGRES_ENGINE,
         'NAME': POSTGRES_DB,
         'USER': POSTGRES_USER,
         'PASSWORD': POSTGRES_PASSWORD,
         'HOST': POSTGRES_HOST,
-        'PORT': 5432,
+        'PORT': POSTGRES_PORT,
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "example"
     }
 }
 
