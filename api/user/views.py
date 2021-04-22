@@ -11,10 +11,14 @@ import pycountry
 import random
 import time
 
+# initiates the redis instance.
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST,
                                   port=settings.REDIS_PORT, db=0)
 set_name = settings.REDIS_SET_NAME
 
+# this function is only used while updating a user's info. The function checks
+# the incoming data, finds out which fields of the user instance are supposed to be
+# updated and returns those fields.
 def get_user_fields(data):
     fields = {}
     if 'country' in data.keys():
@@ -23,8 +27,11 @@ def get_user_fields(data):
         fields['display_name'] = data['display_name']
     return fields    
 
+# this class is responsible for populating the database.
 class populate_db(APIView):
 
+    # checks the incoming data, finds out if floor and ceiling values for score 
+    # generation are specified. Returns the floor and ceil values.
     def get_score_range(self, request, floor, ceil):
 
         if request.data['random_score'] == True:
@@ -43,12 +50,15 @@ class populate_db(APIView):
         
         return floor, ceil
 
+    # Returns a random number between floor and ceil values.
     def get_random_score(self, floor, ceil):
         return random.randint(floor, ceil)
 
+    # Trivial function that returns 0.
     def get_zero(self, floor, ceil):
         return 0
 
+    # populates the database.
     def post(self, request):
 
         start = time.time()
@@ -65,6 +75,7 @@ class populate_db(APIView):
         countries = list(pycountry.countries)
         get_score = self.get_random_score if request.data['random_score'] else self.get_zero
 
+        # generates random users. Amount is specified in 'count' variable.
         for i in range(count):
             score = get_score(floor, ceil)
             country = random.choice(countries).alpha_2.lower()
@@ -73,6 +84,8 @@ class populate_db(APIView):
             pipeline.zadd(set_name, {str(new_user.user_id): new_user.points})
             pipeline.zadd(new_user.country, {str(new_user.user_id): new_user.points})
 
+            # redis pipeline is executed and the django database is updated 
+            # once in every 10000 entries, in order to speed up the process.
             if (i+1) % 10000 == 0 or i+1 == count:
                 print("start of pipeline exec: ", time.time()-start)
                 pipeline.execute()
@@ -89,6 +102,7 @@ class populate_db(APIView):
 
 class user_detail(APIView):
 
+    # Returns the user object with the given user id.
     def get_user(self, id):
         try:
             try:
@@ -104,6 +118,8 @@ class user_detail(APIView):
         if isinstance(user, Response):
             return user
         
+        # checks the redis database for the current rank and points of the user, 
+        # updates the user object in the database afterwards.
         pipeline = redis_instance.pipeline()
         pipeline.zrevrank(set_name, str(id))
         pipeline.zscore(user.country, str(id))
@@ -115,12 +131,14 @@ class user_detail(APIView):
             'country_rank': pipeline_values[2]+1,
             }
         
+        # updates the user instance in the database. 
         serializer = UserSerializer(user, data=data, context={'request': request}, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # updates the user info.
     def put(self, request, id):
 
         if 'display_name' not in request.data.keys() and 'country' not in request.data.keys():
@@ -145,6 +163,7 @@ class user_detail(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # deletes the user from the database as well as from the redis tables.
     def delete(self, request, id):
         user = self.get_user(id)
         if isinstance(user, Response):
@@ -158,7 +177,7 @@ class user_detail(APIView):
         return Response({'message': 'User successfully deleted.'}, status=status.HTTP_204_NO_CONTENT)
 
 
-
+# creates the user instances.
 class create_user(APIView):
 
     def post(self, request):
@@ -169,6 +188,7 @@ class create_user(APIView):
         data = get_user_fields(request.data)
         serializer = UserSerializer(data=data)
 
+        # adds the user instance to redis tables.
         if serializer.is_valid():
             serializer.save()
             start = time.time()
@@ -179,6 +199,8 @@ class create_user(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# returns all users in the database. Usage is not recommended if there are 
+# large number of entries in the database. 
 class all_users(APIView):
 
     def get(self, request):
@@ -189,6 +211,8 @@ class all_users(APIView):
 
         return Response(serializer.data, status.HTTP_200_OK)
     
+    # deletes all users from the database as well as from the redis tables. 
+    # It is a secure way of cleaning the database.
     def delete(self, request):
         User.objects.all().delete()
         redis_instance.flushall()
