@@ -7,25 +7,30 @@ services:
     container_name: app
     command: python manage.py runserver 0.0.0.0:8000
     expose:
-      - "8000"
+      - 8000
     links:
       - postgres:postgres
       - redis:redis
     env_file:
       - ./.env.dev
     volumes:
-      - web-static:/usr/src/app/static
+      - web-static:/usr/src/app/django_static
     
   nginx:
-    build: ./nginx/
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
     restart: always
     container_name: nginx
     ports:
-      - "80:80"
-    volumes: 
-      - web-static:/www/static
+      - 80:80
+    volumes:
+      - web-static:/usr/src/app/django_static
+      - ./nginx:/etc/nginx/conf.d
     links:
       - app:app
+    depends_on: 
+      - app
 
   postgres:
     image: postgres:12.0-alpine
